@@ -1,0 +1,37 @@
+{
+  "name": "@painless/orm",
+  "version": "1.1.0",
+  "description": "ORM for TypeScript.",
+  "keywords": [
+    "orm",
+    "typescript",
+    "typescript-orm"
+  ],
+  "homepage": "https://github.com/Ryuzaki42/orm",
+  "license": "MIT",
+  "author": {
+    "name": "Vladyslav Mozhvylo",
+    "email": "vladyslav.mozhvylo@gmail.com"
+  },
+  "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ryuzaki42/orm"
+  },
+  "scripts": {
+    "test": "ts-node test/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.12",
+    "prettier": "^1.18.2",
+    "ts-node": "^8.4.1",
+    "tslint": "^5.20.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "tslint-plugin-prettier": "^2.0.1",
+    "typescript": "^3.6.4"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.13"
+  }
+}
