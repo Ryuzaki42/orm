@@ -1,12 +1,14 @@
+import { Alias } from "./Alias";
+
 export class QueryExpressionMap {
-  public main?: string;
+  public mainAlias?: Alias;
   public selects?: string[];
   public type?: "select" | "update" | "delete" | "insert";
 
   public clone(): QueryExpressionMap {
     const map = new QueryExpressionMap();
 
-    map.main = this.main;
+    map.mainAlias = this.mainAlias;
     map.selects = this.selects && [...this.selects];
     map.type = this.type;
 

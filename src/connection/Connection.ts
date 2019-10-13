@@ -1,7 +1,9 @@
 import { IDriver } from "../drivers/Driver";
 import { DriverFactory } from "../drivers/DriverFactory";
+import Metadata from "../metadata/Metadata";
+import { Alias } from "../query-builder/Alias";
 import { QueryBuilder } from "../query-builder/QueryBuilder";
-import { ConnectionOptions } from "../types";
+import { ConnectionOptions, Constructor } from "../types";
 
 export class Connection {
   public readonly driver: IDriver;
@@ -17,10 +19,15 @@ export class Connection {
     return this;
   }
 
-  public createQueryBuilder<Model>(model: string): QueryBuilder<Model> {
+  public createQueryBuilder<Model>(model: Constructor<Model>): QueryBuilder<Model> {
     const queryBuilder = new QueryBuilder(this);
 
-    queryBuilder.expressionMap.main = model;
+    const modelMetadata = Metadata.getInstance().getModelMetadata(model);
+    if (!modelMetadata) {
+      throw new Error("");
+    }
+
+    queryBuilder.expressionMap.mainAlias = new Alias(modelMetadata.name, undefined, modelMetadata);
 
     return queryBuilder;
   }

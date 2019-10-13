@@ -6,10 +6,10 @@ interface IModelOptions {
   name?: string;
 }
 
-export function Model(constructor: Constructor): void;
+export function Model(constructor: Constructor<any>): void;
 export function Model(options: IModelOptions): any;
-export function Model(constructorOrOptions: Constructor | IModelOptions) {
-  const emitMetadata = (constructor: Constructor, options: IModelOptions = {}) => {
+export function Model(constructorOrOptions: Constructor<any> | IModelOptions) {
+  const emitMetadata = (constructor: Constructor<any>, options: IModelOptions = {}) => {
     let modelMetadata = Metadata.getInstance().getModelMetadata(constructor);
     if (!modelMetadata) {
       modelMetadata = new ModelMetadata(constructor, options.name || constructor.name);
@@ -20,11 +20,11 @@ export function Model(constructorOrOptions: Constructor | IModelOptions) {
   };
 
   if (typeof constructorOrOptions === "function") {
-    emitMetadata(constructorOrOptions as Constructor);
+    emitMetadata(constructorOrOptions as Constructor<any>);
     return;
   }
 
-  return (constructor: Constructor) => {
+  return (constructor: Constructor<any>) => {
     emitMetadata(constructor, constructorOrOptions);
   };
 }

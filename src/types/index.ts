@@ -1,8 +1,8 @@
 import { IPostgresOptions } from "../drivers/postgres/PostgresOptions";
 
-export type Constructor = new () => any;
+export type Constructor<T> = new () => T;
 
-export type PropertyType = Constructor;
+export type PropertyType = Constructor<any>;
 
 export type DriverType = "postgres";
 

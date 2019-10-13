@@ -14,9 +14,9 @@ export function Property(target: object, propertyName: string): void;
 export function Property(options: IPropertyOptions): any;
 export function Property(targetOrOptions: object | IPropertyOptions, propertyName?: string) {
   const emitMetadata = (target: object, propertyName: string, options: IPropertyOptions = {}) => {
-    let modelMetadata = Metadata.getInstance().getModelMetadata(target.constructor as Constructor);
+    let modelMetadata = Metadata.getInstance().getModelMetadata(target.constructor as Constructor<any>);
     if (!modelMetadata) {
-      modelMetadata = new ModelMetadata(target.constructor as Constructor, target.constructor.name);
+      modelMetadata = new ModelMetadata(target.constructor as Constructor<any>, target.constructor.name);
       Metadata.getInstance().addModelMetadata(modelMetadata);
     }
 
