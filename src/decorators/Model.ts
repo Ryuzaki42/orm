@@ -1,4 +1,4 @@
-import Metadata from "../metadata";
+import Metadata from "../metadata/Metadata";
 import ModelMetadata from "../metadata/ModelMetadata";
 import { Constructor } from "../types";
 
