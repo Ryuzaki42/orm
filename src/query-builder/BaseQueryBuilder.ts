@@ -1,10 +1,10 @@
 import { Connection } from "../connection/Connection";
 import { IQueryExecutor } from "../drivers/QueryExecutor";
-import { QueryExpressionMap } from "./QueryExpressionMap";
+import { QueryExpression } from "./QueryExpression";
 
 export class BaseQueryBuilder<Model> {
   public readonly connection: Connection;
-  public readonly expressionMap: QueryExpressionMap;
+  public readonly expressionMap: QueryExpression;
   public readonly queryExecutor?: IQueryExecutor;
 
   constructor(connection: Connection, queryExecutor?: IQueryExecutor);
@@ -17,7 +17,7 @@ export class BaseQueryBuilder<Model> {
     } else {
       this.connection = connectionOrQueryBuilder;
       this.queryExecutor = queryExecutor;
-      this.expressionMap = new QueryExpressionMap();
+      this.expressionMap = new QueryExpression();
     }
   }
 

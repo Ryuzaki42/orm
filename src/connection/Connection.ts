@@ -1,7 +1,6 @@
 import { IDriver } from "../drivers/Driver";
 import { DriverFactory } from "../drivers/DriverFactory";
 import Metadata from "../metadata/Metadata";
-import { Alias } from "../query-builder/Alias";
 import { QueryBuilder } from "../query-builder/QueryBuilder";
 import { ConnectionOptions, Constructor } from "../types";
 
@@ -27,7 +26,7 @@ export class Connection {
       throw new Error("");
     }
 
-    queryBuilder.expressionMap.mainAlias = new Alias(modelMetadata.name, undefined, modelMetadata);
+    queryBuilder.expressionMap.mainModel = modelMetadata;
 
     return queryBuilder;
   }

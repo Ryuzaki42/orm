@@ -9,7 +9,7 @@ export class QueryBuilder<Model> extends BaseQueryBuilder<Model> {
       this.expressionMap.selects = selection;
     } else {
       this.expressionMap.selects = this.expressionMap
-        .mainAlias!.metadata!.getPropertiesMetadata()
+        .mainModel!.getPropertiesMetadata()
         .map(propertyMetadata => propertyMetadata.name);
     }
 
