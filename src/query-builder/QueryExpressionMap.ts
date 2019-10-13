@@ -3,7 +3,7 @@ import { Alias } from "./Alias";
 export class QueryExpressionMap {
   public mainAlias?: Alias;
   public selects?: string[];
-  public type?: "select" | "update" | "delete" | "insert";
+  public type?: "select";
 
   public clone(): QueryExpressionMap {
     const map = new QueryExpressionMap();
