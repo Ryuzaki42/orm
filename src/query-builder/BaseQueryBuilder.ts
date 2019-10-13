@@ -1,15 +1,36 @@
+import { Connection } from "../connection/Connection";
+import { IQueryExecutor } from "../drivers/QueryExecutor";
 import { QueryExpressionMap } from "./QueryExpressionMap";
 
 export class BaseQueryBuilder<Model> {
+  public readonly connection: Connection;
   public readonly expressionMap: QueryExpressionMap;
+  public readonly queryExecutor?: IQueryExecutor;
 
-  constructor();
+  constructor(connection: Connection, queryExecutor?: IQueryExecutor);
   constructor(queryBuilder: BaseQueryBuilder<Model>);
-  constructor(queryBuilder?: BaseQueryBuilder<Model>) {
-    if (queryBuilder) {
-      this.expressionMap = queryBuilder.expressionMap.clone();
+  constructor(connectionOrQueryBuilder: Connection | BaseQueryBuilder<Model>, queryExecutor?: IQueryExecutor) {
+    if (connectionOrQueryBuilder instanceof BaseQueryBuilder) {
+      this.connection = connectionOrQueryBuilder.connection;
+      this.queryExecutor = connectionOrQueryBuilder.queryExecutor;
+      this.expressionMap = connectionOrQueryBuilder.expressionMap.clone();
     } else {
+      this.connection = connectionOrQueryBuilder;
+      this.queryExecutor = queryExecutor;
       this.expressionMap = new QueryExpressionMap();
+    }
+  }
+
+  public async execute() {
+    const query = this.getQuery();
+    const queryExecutor = this.queryExecutor || this.connection.createQueryExecutor();
+
+    try {
+      return await queryExecutor.execute(query);
+    } finally {
+      if (queryExecutor !== this.queryExecutor) {
+        await queryExecutor.release();
+      }
     }
   }
 

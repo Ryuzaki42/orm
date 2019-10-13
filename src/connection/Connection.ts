@@ -18,10 +18,14 @@ export class Connection {
   }
 
   public createQueryBuilder<Model>(model: string): QueryBuilder<Model> {
-    const queryBuilder = new QueryBuilder();
+    const queryBuilder = new QueryBuilder(this);
 
     queryBuilder.expressionMap.main = model;
 
     return queryBuilder;
+  }
+
+  public createQueryExecutor() {
+    return this.driver.createQueryExecutor();
   }
 }

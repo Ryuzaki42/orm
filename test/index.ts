@@ -21,5 +21,9 @@ const connection = ConnectionManager.getInstance().create({
 });
 
 connection.connect().then(connection => {
-  console.log(connection.createQueryBuilder("test").select(["a", "b", "c"]));
+  connection
+    .createQueryBuilder("test")
+    .select(["a", "b", "c"])
+    .execute()
+    .then(result => console.log(result));
 });
