@@ -18,7 +18,7 @@ export class Connection {
     return this;
   }
 
-  public createQueryBuilder<Model>(model: Constructor<Model>): QueryBuilder<Model> {
+  public createQueryBuilder<Model>(model: Constructor<Model>, alias?: string): QueryBuilder<Model> {
     const queryBuilder = new QueryBuilder(this);
 
     const modelMetadata = Metadata.getInstance().getModelMetadata(model);
@@ -26,7 +26,10 @@ export class Connection {
       throw new Error("");
     }
 
-    queryBuilder.expressionMap.mainModel = modelMetadata;
+    queryBuilder.expressionMap.main = {
+      alias: alias || modelMetadata.name,
+      metadata: modelMetadata,
+    };
 
     return queryBuilder;
   }
