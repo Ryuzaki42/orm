@@ -2,7 +2,7 @@ import { Connection } from "../connection/Connection";
 import { IQueryExecutor } from "../drivers/QueryExecutor";
 import { QueryExpression } from "./QueryExpression";
 
-export class BaseQueryBuilder<Model> {
+export class BaseQueryBuilder<Model> extends Promise<any> {
   public readonly connection: Connection;
   public readonly expressionMap: QueryExpression;
   public readonly queryExecutor?: IQueryExecutor;
@@ -10,6 +10,9 @@ export class BaseQueryBuilder<Model> {
   constructor(connection: Connection, queryExecutor?: IQueryExecutor);
   constructor(queryBuilder: BaseQueryBuilder<Model>);
   constructor(connectionOrQueryBuilder: Connection | BaseQueryBuilder<Model>, queryExecutor?: IQueryExecutor) {
+    // tslint:disable-next-line:no-empty
+    super(() => {});
+
     if (connectionOrQueryBuilder instanceof BaseQueryBuilder) {
       this.connection = connectionOrQueryBuilder.connection;
       this.queryExecutor = connectionOrQueryBuilder.queryExecutor;
@@ -36,5 +39,39 @@ export class BaseQueryBuilder<Model> {
 
   public getQuery(): string {
     throw new Error();
+  }
+
+  public async then<TResult1 = any, TResult2 = any>(
+    onResolve?: ((value: any) => PromiseLike<TResult1> | TResult1) | undefined | null,
+    onReject?: ((reason: any) => PromiseLike<TResult2> | TResult2) | undefined | null,
+  ): Promise<TResult1 | TResult2> {
+    try {
+      const executeResult = await this.execute();
+      if (onResolve) {
+        return new Promise((resolve, reject) => {
+          try {
+            const result = onResolve(executeResult);
+            resolve(result);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      } else {
+        return Promise.resolve(executeResult);
+      }
+    } catch (e) {
+      if (onReject) {
+        return new Promise((resolve, reject) => {
+          try {
+            const result = onReject(e);
+            resolve(result);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      } else {
+        return Promise.reject(e);
+      }
+    }
   }
 }

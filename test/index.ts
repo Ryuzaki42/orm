@@ -20,11 +20,6 @@ const connection = ConnectionManager.getInstance().create({
   user: "test",
 });
 
-connection.connect().then(connection => {
-  const query = connection
-    .createQueryBuilder(User)
-    .select()
-    .getQuery();
-
-  console.log(query);
+connection.connect().then(async connection => {
+  console.log(await connection.createQueryBuilder(User).select());
 });
