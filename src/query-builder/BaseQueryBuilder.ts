@@ -4,7 +4,7 @@ import { QueryExpression } from "./QueryExpression";
 
 export class BaseQueryBuilder<Model> extends Promise<any> {
   public readonly connection: Connection;
-  public readonly expressionMap: QueryExpression;
+  public readonly expression: QueryExpression;
   public readonly queryExecutor?: IQueryExecutor;
 
   constructor(connection: Connection, queryExecutor?: IQueryExecutor);
@@ -16,11 +16,11 @@ export class BaseQueryBuilder<Model> extends Promise<any> {
     if (connectionOrQueryBuilder instanceof BaseQueryBuilder) {
       this.connection = connectionOrQueryBuilder.connection;
       this.queryExecutor = connectionOrQueryBuilder.queryExecutor;
-      this.expressionMap = connectionOrQueryBuilder.expressionMap.clone();
+      this.expression = connectionOrQueryBuilder.expression.clone();
     } else {
       this.connection = connectionOrQueryBuilder;
       this.queryExecutor = queryExecutor;
-      this.expressionMap = new QueryExpression();
+      this.expression = new QueryExpression();
     }
   }
 
@@ -38,7 +38,7 @@ export class BaseQueryBuilder<Model> extends Promise<any> {
   }
 
   public getQuery(): string {
-    throw new Error();
+    return this.connection.driver.getQuery(this);
   }
 
   public async then<TResult1 = any, TResult2 = any>(

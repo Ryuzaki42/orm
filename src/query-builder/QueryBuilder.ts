@@ -3,12 +3,12 @@ import { SelectQueryBuilder } from "./SelectQueryBuilder";
 
 export class QueryBuilder<Model> extends BaseQueryBuilder<Model> {
   public select(selection?: string[]): SelectQueryBuilder<Model> {
-    this.expressionMap.type = "select";
+    this.expression.type = "select";
 
     if (selection) {
-      this.expressionMap.selects = selection;
+      this.expression.selects = selection;
     } else {
-      this.expressionMap.selects = this.expressionMap
+      this.expression.selects = this.expression
         .main!.metadata.getPropertiesMetadata()
         .map(propertyMetadata => propertyMetadata.name);
     }

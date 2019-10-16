@@ -21,5 +21,5 @@ const connection = ConnectionManager.getInstance().create({
 });
 
 connection.connect().then(async connection => {
-  console.log(await connection.createQueryBuilder(User).select());
+  console.log(connection.createQueryBuilder(User).select().getQuery());
 });

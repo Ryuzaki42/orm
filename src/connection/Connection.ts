@@ -26,7 +26,7 @@ export class Connection {
       throw new Error("");
     }
 
-    queryBuilder.expressionMap.main = {
+    queryBuilder.expression.main = {
       alias: alias || modelMetadata.name,
       metadata: modelMetadata,
     };
