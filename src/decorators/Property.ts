@@ -16,7 +16,7 @@ export function Property(targetOrOptions: object | IPropertyOptions, propertyNam
   const emitMetadata = (target: object, propertyName: string, options: IPropertyOptions = {}) => {
     let modelMetadata = Metadata.getInstance().getModelMetadata(target.constructor as Constructor<any>);
     if (!modelMetadata) {
-      modelMetadata = new ModelMetadata(target.constructor as Constructor<any>, target.constructor.name);
+      modelMetadata = new ModelMetadata(target.constructor as Constructor<any>, target.constructor.name, target.constructor.name);
       Metadata.getInstance().addModelMetadata(modelMetadata);
     }
 
@@ -29,7 +29,7 @@ export function Property(targetOrOptions: object | IPropertyOptions, propertyNam
       }
     }
 
-    modelMetadata.addPropertyMetadata(new PropertyMetadata(options.name || propertyName, type));
+    modelMetadata.addPropertyMetadata(new PropertyMetadata(propertyName, options.name || propertyName, type));
   };
 
   if (propertyName) {

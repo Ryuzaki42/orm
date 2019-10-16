@@ -4,6 +4,9 @@ import Metadata from "../src/metadata/Metadata";
 
 @Model
 export class User {
+  @Property
+  public id!: number;
+
   @Property({ name: "custom" })
   public name!: string;
 
@@ -21,5 +24,12 @@ const connection = ConnectionManager.getInstance().create({
 });
 
 connection.connect().then(async connection => {
-  console.log(connection.createQueryBuilder(User).select().getQuery());
+  const res = await connection
+    .createQueryBuilder(User)
+    .select()
+    .where({
+      age: 42,
+    });
+
+  console.log(res);
 });

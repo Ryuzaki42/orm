@@ -20,7 +20,7 @@ export class Connection {
   }
 
   public createQueryBuilder<Model>(model: Constructor<Model>, alias?: string): QueryBuilder<Model> {
-    const queryBuilder = new QueryBuilder(this);
+    const queryBuilder = new QueryBuilder<Model>(this);
 
     const modelMetadata = Metadata.getInstance().getModelMetadata(model);
     if (!modelMetadata) {

@@ -1,4 +1,4 @@
-import { PoolClient, QueryResult } from "pg";
+import { PoolClient } from "pg";
 import { IQueryExecutor } from "../QueryExecutor";
 import { PostgresDriver } from "./PostgresDriver";
 
@@ -21,9 +21,9 @@ export class PostgresQueryExecutor implements IQueryExecutor {
     return this.connectionPromise;
   }
 
-  public async execute(query: string): Promise<QueryResult<any>> {
+  public async execute(query: string): Promise<any> {
     const connection = await this.connect();
-    return connection.query(query);
+    return (await connection.query(query)).rows;
   }
 
   public release(): Promise<void> {

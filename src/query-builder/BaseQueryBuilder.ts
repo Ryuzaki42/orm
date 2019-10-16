@@ -2,14 +2,14 @@ import { Connection } from "../connection/Connection";
 import { IQueryExecutor } from "../drivers/QueryExecutor";
 import { QueryExpression } from "./QueryExpression";
 
-export class BaseQueryBuilder<Model> extends Promise<any> {
+export class BaseQueryBuilder<Result> extends Promise<Result> {
   public readonly connection: Connection;
   public readonly expression: QueryExpression;
   public readonly queryExecutor?: IQueryExecutor;
 
   constructor(connection: Connection, queryExecutor?: IQueryExecutor);
-  constructor(queryBuilder: BaseQueryBuilder<Model>);
-  constructor(connectionOrQueryBuilder: Connection | BaseQueryBuilder<Model>, queryExecutor?: IQueryExecutor) {
+  constructor(queryBuilder: BaseQueryBuilder<any>);
+  constructor(connectionOrQueryBuilder: Connection | BaseQueryBuilder<any>, queryExecutor?: IQueryExecutor) {
     // tslint:disable-next-line:no-empty
     super(() => {});
 
@@ -26,10 +26,11 @@ export class BaseQueryBuilder<Model> extends Promise<any> {
 
   public async execute(): Promise<any> {
     const query = this.getQuery();
+    console.log(query);
     const queryExecutor = this.queryExecutor || this.connection.createQueryExecutor();
 
     try {
-      return await queryExecutor.execute(query);
+      return this.transformResult(await queryExecutor.execute(query));
     } finally {
       if (queryExecutor !== this.queryExecutor) {
         await queryExecutor.release();
@@ -41,7 +42,7 @@ export class BaseQueryBuilder<Model> extends Promise<any> {
     return this.connection.driver.getQuery(this);
   }
 
-  public async then<TResult1 = any, TResult2 = any>(
+  public async then<TResult1 = Result, TResult2 = any>(
     onResolve?: ((value: any) => PromiseLike<TResult1> | TResult1) | undefined | null,
     onReject?: ((reason: any) => PromiseLike<TResult2> | TResult2) | undefined | null,
   ): Promise<TResult1 | TResult2> {
@@ -73,5 +74,9 @@ export class BaseQueryBuilder<Model> extends Promise<any> {
         return Promise.reject(e);
       }
     }
+  }
+
+  public transformResult(value: any): any {
+    return value;
   }
 }

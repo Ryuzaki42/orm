@@ -30,15 +30,24 @@ export class PostgresDriver implements IDriver {
     switch (queryBuilder.expression.type) {
       case "select":
         return `SELECT ${queryBuilder.expression
-          .selects!.map(
-            select =>
-              `"${queryBuilder.expression.main!.alias}"."${select}" AS "${
-                queryBuilder.expression.main!.alias
-              }_${select}"`,
+          .select!.properties!.map(
+            property =>
+              `"${queryBuilder.expression.main!.alias}"."${
+                queryBuilder.expression.main!.metadata.getPropertyMetadata(property)!.name
+              }" AS "${property}"`,
           )
           .join(", ")} FROM "${queryBuilder.expression.main!.metadata.name}" AS "${
           queryBuilder.expression.main!.alias
-        }"`;
+        }" ${
+          queryBuilder.expression.where
+            ? "WHERE " +
+              Object.entries(queryBuilder.expression.where)
+                .map(([key, value]) => {
+                  return `${key} = ${value}`;
+                })
+                .join(" AND")
+            : ""
+        } ${queryBuilder.expression.select!.mode === "one" ? "LIMIT 1" : ""}`;
       default:
         throw new Error();
     }
