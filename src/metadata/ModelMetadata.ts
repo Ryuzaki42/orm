@@ -10,7 +10,7 @@ export default class ModelMetadata {
     this.properties.push(propertyMetadata);
   }
 
-  public getPropertiesMetadata() {
+  public getPropertiesMetadata(): PropertyMetadata[] {
     return this.properties;
   }
 }

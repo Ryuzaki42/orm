@@ -24,7 +24,7 @@ export class BaseQueryBuilder<Model> extends Promise<any> {
     }
   }
 
-  public async execute() {
+  public async execute(): Promise<any> {
     const query = this.getQuery();
     const queryExecutor = this.queryExecutor || this.connection.createQueryExecutor();
 

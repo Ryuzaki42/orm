@@ -4,7 +4,7 @@ import ModelMetadata from "./ModelMetadata";
 export default class Metadata {
   private static instance: Metadata;
 
-  public static getInstance() {
+  public static getInstance(): Metadata {
     if (!this.instance) {
       this.instance = new Metadata();
     }
@@ -20,7 +20,7 @@ export default class Metadata {
     this.modelByConstructorRefs.set(modelMetadata.constructor, modelMetadata);
   }
 
-  public getModelMetadata(constructor: Constructor<any>) {
+  public getModelMetadata(constructor: Constructor<any>): ModelMetadata | undefined {
     return this.modelByConstructorRefs.get(constructor);
   }
 }

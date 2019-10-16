@@ -1,5 +1,6 @@
 import { IDriver } from "../drivers/Driver";
 import { DriverFactory } from "../drivers/DriverFactory";
+import { IQueryExecutor } from "../drivers/QueryExecutor";
 import Metadata from "../metadata/Metadata";
 import { QueryBuilder } from "../query-builder/QueryBuilder";
 import { ConnectionOptions, Constructor } from "../types";
@@ -34,7 +35,7 @@ export class Connection {
     return queryBuilder;
   }
 
-  public createQueryExecutor() {
+  public createQueryExecutor(): IQueryExecutor {
     return this.driver.createQueryExecutor();
   }
 }

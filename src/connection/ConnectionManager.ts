@@ -4,7 +4,7 @@ import { Connection } from "./Connection";
 export class ConnectionManager {
   private static instance: ConnectionManager;
 
-  public static getInstance() {
+  public static getInstance(): ConnectionManager {
     if (!this.instance) {
       this.instance = new ConnectionManager();
     }
