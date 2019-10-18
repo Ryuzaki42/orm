@@ -1,5 +1,7 @@
 import ModelMetadata from "../metadata/ModelMetadata";
 
+import { cloneDeep } from "lodash";
+
 export class QueryExpression {
   public main?: {
     alias: string;
@@ -8,15 +10,16 @@ export class QueryExpression {
   public select?: {
     mode?: "one" | "many";
     properties?: string[];
+    raws?: Array<{ alias: string; expression: string }>;
   };
   public type?: "select";
-  public where?: any;
+  public where?: Array<{ expression: string; value: any }>;
 
   public clone(): QueryExpression {
     const map = new QueryExpression();
 
-    map.main = this.main && { ...this.main };
-    map.select = this.select && { ...this.select, properties: this.select.properties && [...this.select.properties] };
+    map.main = cloneDeep(this.main);
+    map.select = cloneDeep(this.select);
     map.type = this.type;
     map.where = this.where;
 

@@ -26,28 +26,59 @@ export class PostgresDriver implements IDriver {
     return this.pool!.connect();
   }
 
-  public getQuery(queryBuilder: BaseQueryBuilder<any>): string {
+  public getQuery(queryBuilder: BaseQueryBuilder<any, any>): string {
     switch (queryBuilder.expression.type) {
       case "select":
-        return `SELECT ${queryBuilder.expression
-          .select!.properties!.map(
-            property =>
-              `"${queryBuilder.expression.main!.alias}"."${
-                queryBuilder.expression.main!.metadata.getPropertyMetadata(property)!.name
-              }" AS "${property}"`,
-          )
-          .join(", ")} FROM "${queryBuilder.expression.main!.metadata.name}" AS "${
-          queryBuilder.expression.main!.alias
-        }" ${
-          queryBuilder.expression.where
-            ? "WHERE " +
-              Object.entries(queryBuilder.expression.where)
-                .map(([key, value]) => {
-                  return `${key} = ${value}`;
-                })
-                .join(" AND")
-            : ""
-        } ${queryBuilder.expression.select!.mode === "one" ? "LIMIT 1" : ""}`;
+        const expression = queryBuilder.expression;
+        const main = expression.main;
+        const select = expression.select;
+        const where = expression.where;
+        if (!select) {
+          throw new Error();
+        }
+        const limit = select.mode === "one" ? 1 : undefined;
+
+        const selects: string[] = [];
+        let from:
+          | {
+              alias: string;
+              from: string;
+            }
+          | undefined;
+        const wheres: string[] = [];
+
+        if (select.properties) {
+          if (!main) {
+            throw new Error();
+          }
+
+          from = {
+            alias: main.alias,
+            from: main.metadata.name,
+          };
+
+          selects.push(
+            ...select.properties.map(
+              property => `"${main.alias}"."${main.metadata.getPropertyMetadata(property)!.name}" AS "${property}"`,
+            ),
+          );
+        }
+
+        if (select.raws) {
+          selects.push(...select.raws.map(raw => `${raw.expression} AS "${raw.alias}"`));
+        }
+
+        if (where) {
+          wheres.push(...where.map(whereItem => `${whereItem.expression} = ${whereItem.value}`));
+        }
+
+        if (selects.length === 0) {
+          throw new Error();
+        }
+
+        return `SELECT ${selects.join(", ")} ${from ? `FROM "${from.from}" AS "${from.alias}"` : ""} ${
+          wheres.length > 0 ? `WHERE ${wheres.join(" AND")}` : ""
+        } ${limit ? `LIMIT ${limit}` : ""}`;
       default:
         throw new Error();
     }

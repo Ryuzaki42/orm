@@ -12,28 +12,32 @@ interface IPropertyOptions {
 
 export function Property(target: object, propertyName: string): void;
 export function Property(options: IPropertyOptions): any;
-export function Property(targetOrOptions: object | IPropertyOptions, propertyName?: string) {
-  const emitMetadata = (target: object, propertyName: string, options: IPropertyOptions = {}) => {
+export function Property(targetOrOptions: object | IPropertyOptions, maybePropertyName?: string) {
+  const emitMetadata = (target: object, name: string, options: IPropertyOptions = {}) => {
     let modelMetadata = Metadata.getInstance().getModelMetadata(target.constructor as Constructor<any>);
     if (!modelMetadata) {
-      modelMetadata = new ModelMetadata(target.constructor as Constructor<any>, target.constructor.name, target.constructor.name);
+      modelMetadata = new ModelMetadata(
+        target.constructor as Constructor<any>,
+        target.constructor.name,
+        target.constructor.name,
+      );
       Metadata.getInstance().addModelMetadata(modelMetadata);
     }
 
     let type = options.type;
     if (!type) {
-      type = Reflect.getMetadata("design:type", target, propertyName);
+      type = Reflect.getMetadata("design:type", target, name);
 
       if (!type) {
-        throw new Error("Property type is undefined");
+        throw new Error();
       }
     }
 
-    modelMetadata.addPropertyMetadata(new PropertyMetadata(propertyName, options.name || propertyName, type));
+    modelMetadata.addPropertyMetadata(new PropertyMetadata(name, options.name || name, type));
   };
 
-  if (propertyName) {
-    emitMetadata(targetOrOptions, propertyName);
+  if (maybePropertyName) {
+    emitMetadata(targetOrOptions, maybePropertyName);
     return;
   }
 

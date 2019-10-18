@@ -23,13 +23,11 @@ const connection = ConnectionManager.getInstance().create({
   user: "test",
 });
 
-connection.connect().then(async connection => {
-  const res = await connection
+connection.connect().then(async c => {
+  const res = await c
     .createQueryBuilder(User)
-    .select()
-    .where({
-      age: 42,
-    });
+    .select("id")
+    .one();
 
   console.log(res);
 });

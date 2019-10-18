@@ -2,14 +2,24 @@ import { Connection } from "../connection/Connection";
 import { IQueryExecutor } from "../drivers/QueryExecutor";
 import { QueryExpression } from "./QueryExpression";
 
-export class BaseQueryBuilder<Result> extends Promise<Result> {
+export class BaseQueryBuilder<ModelResult, RawResult> extends Promise<
+  unknown extends ModelResult
+    ? RawResult
+    : unknown[] extends ModelResult
+    ? RawResult
+    : unknown extends RawResult
+    ? ModelResult
+    : unknown[] extends RawResult
+    ? ModelResult
+    : { model: ModelResult; raw: RawResult }
+> {
   public readonly connection: Connection;
   public readonly expression: QueryExpression;
   public readonly queryExecutor?: IQueryExecutor;
 
   constructor(connection: Connection, queryExecutor?: IQueryExecutor);
-  constructor(queryBuilder: BaseQueryBuilder<any>);
-  constructor(connectionOrQueryBuilder: Connection | BaseQueryBuilder<any>, queryExecutor?: IQueryExecutor) {
+  constructor(queryBuilder: BaseQueryBuilder<any, any>);
+  constructor(connectionOrQueryBuilder: Connection | BaseQueryBuilder<any, any>, queryExecutor?: IQueryExecutor) {
     // tslint:disable-next-line:no-empty
     super(() => {});
 
@@ -42,8 +52,21 @@ export class BaseQueryBuilder<Result> extends Promise<Result> {
     return this.connection.driver.getQuery(this);
   }
 
-  public async then<TResult1 = Result, TResult2 = any>(
-    onResolve?: ((value: any) => PromiseLike<TResult1> | TResult1) | undefined | null,
+  public async then<TResult1 = any, TResult2 = any>(
+    onResolve?:
+      | ((
+          value: unknown extends ModelResult
+            ? RawResult
+            : unknown[] extends ModelResult
+            ? RawResult
+            : unknown extends RawResult
+            ? ModelResult
+            : unknown[] extends RawResult
+            ? ModelResult
+            : { model: ModelResult; raw: RawResult },
+        ) => PromiseLike<TResult1> | TResult1)
+      | undefined
+      | null,
     onReject?: ((reason: any) => PromiseLike<TResult2> | TResult2) | undefined | null,
   ): Promise<TResult1 | TResult2> {
     try {

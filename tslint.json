@@ -7,7 +7,6 @@
         "tslint-plugin-prettier"
     ],
     "rules": {
-        "no-shadowed-variable": false,
         "prettier": true,
         "member-ordering": [
             true,

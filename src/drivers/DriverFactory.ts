@@ -1,5 +1,4 @@
 import { Connection } from "../connection/Connection";
-import { DriverNotFound } from "../errors/DriverNotFound";
 import { IDriver } from "./Driver";
 import { PostgresDriver } from "./postgres/PostgresDriver";
 
@@ -10,7 +9,7 @@ export class DriverFactory {
       case "postgres":
         return new PostgresDriver(connection);
       default:
-        throw new DriverNotFound(type);
+        throw new Error();
     }
   }
 }

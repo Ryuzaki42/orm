@@ -19,18 +19,20 @@ export class Connection {
     return this;
   }
 
-  public createQueryBuilder<Model>(model: Constructor<Model>, alias?: string): QueryBuilder<Model> {
-    const queryBuilder = new QueryBuilder<Model>(this);
+  public createQueryBuilder<Model>(model?: Constructor<Model>, alias?: string): QueryBuilder<Model, unknown> {
+    const queryBuilder = new QueryBuilder<Model, unknown>(this);
 
-    const modelMetadata = Metadata.getInstance().getModelMetadata(model);
-    if (!modelMetadata) {
-      throw new Error("");
+    if (model) {
+      const modelMetadata = Metadata.getInstance().getModelMetadata(model);
+      if (!modelMetadata) {
+        throw new Error();
+      }
+
+      queryBuilder.expression.main = {
+        alias: alias || modelMetadata.name,
+        metadata: modelMetadata,
+      };
     }
-
-    queryBuilder.expression.main = {
-      alias: alias || modelMetadata.name,
-      metadata: modelMetadata,
-    };
 
     return queryBuilder;
   }
