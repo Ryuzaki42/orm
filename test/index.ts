@@ -26,9 +26,43 @@ const connection = ConnectionManager.getInstance().create({
 connection.connect().then(async c => {
   const res = await c
     .createQueryBuilder(User)
-    .select("id")
-    .one()
+    .select()
+    .where("id", 2)
+    .one();
+
+  const res1 = await c
+    .createQueryBuilder(User)
+    .select()
+    .many()
     .where("id", 2);
 
-  console.log(res);
+  const res2 = await c
+    .createQueryBuilder(User)
+    .select()
+    .where("id", 2);
+
+  const res3 = await c
+    .createQueryBuilder()
+    .selectRaw("1", "something")
+    .one();
+
+  const res4 = await c
+    .createQueryBuilder()
+    .selectRaw("1", "something")
+    .many();
+
+  const res5 = await c
+    .createQueryBuilder()
+    .selectRaw("1", "something")
+    .addSelectRawAs<number>()("42", "someNumber")
+    .many();
+
+  const res6 = await c
+    .createQueryBuilder(User)
+    .select()
+    .addSelectRawAs<number>()("42", "someNumber")
+    .addSelectRawAs<string>()("'text'", "someText")
+    .one();
+
+  console.log(res, res1, res2, res3, res4, res5, res6);
 });
