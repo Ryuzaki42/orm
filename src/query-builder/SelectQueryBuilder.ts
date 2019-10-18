@@ -9,8 +9,8 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
   ): SelectQueryBuilder<
     ModelResult,
     RawResult extends any[]
-      ? Array<RawResult[0] extends undefined ? { [key in K]: any } : RawResult[0] & { [key in K]: any }>
-      : RawResult extends undefined
+      ? Array<unknown extends RawResult[0] ? { [key in K]: any } : RawResult[0] & { [key in K]: any }>
+      : unknown extends RawResult
       ? { [key in K]: any }
       : RawResult & { [key in K]: any }
   > {
@@ -29,8 +29,8 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
   ) => SelectQueryBuilder<
     ModelResult,
     RawResult extends any[]
-      ? Array<RawResult[0] extends undefined ? { [key in K]: R } : RawResult[0] & { [key in K]: R }>
-      : RawResult extends undefined
+      ? Array<unknown extends RawResult[0] ? { [key in K]: R } : RawResult[0] & { [key in K]: R }>
+      : unknown extends RawResult
       ? { [key in K]: R }
       : RawResult & { [key in K]: R }
   > {
@@ -42,7 +42,7 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
   public from<Model>(
     model: Constructor<Model>,
     alias?: string,
-  ): SelectQueryBuilder<ModelResult extends any[] ? Array<ModelResult[0] & Model> : ModelResult & Model, RawResult> {
+  ): SelectQueryBuilder<ModelResult extends any[] ? Model[] : Model, RawResult> {
     const modelMetadata = Metadata.getInstance().getModelMetadata(model);
     if (!modelMetadata) {
       throw new Error();
@@ -53,10 +53,7 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
       metadata: modelMetadata,
     };
 
-    return (this as unknown) as SelectQueryBuilder<
-      ModelResult extends any[] ? Array<ModelResult[0] & Model> : ModelResult & Model,
-      RawResult
-    >;
+    return (this as unknown) as SelectQueryBuilder<ModelResult extends any[] ? Model[] : Model, RawResult>;
   }
 
   public many(): SelectQueryBuilder<
