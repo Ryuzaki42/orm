@@ -27,7 +27,8 @@ connection.connect().then(async c => {
   const res = await c
     .createQueryBuilder(User)
     .select("id")
-    .one();
+    .one()
+    .where("id", 2);
 
   console.log(res);
 });

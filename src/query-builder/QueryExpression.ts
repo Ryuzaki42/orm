@@ -13,7 +13,10 @@ export class QueryExpression {
     raws?: Array<{ alias: string; expression: string }>;
   };
   public type?: "select";
-  public where?: Array<{ expression: string; value: any }>;
+  public where?: {
+    properties?: Array<{ property: string; value: any }>;
+    raws?: Array<{ expression: string; value: any }>;
+  };
 
   public clone(): QueryExpression {
     const map = new QueryExpression();

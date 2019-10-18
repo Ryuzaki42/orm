@@ -69,7 +69,24 @@ export class PostgresDriver implements IDriver {
         }
 
         if (where) {
-          wheres.push(...where.map(whereItem => `${whereItem.expression} = ${whereItem.value}`));
+          if (where.properties) {
+            if (!main) {
+              throw new Error();
+            }
+
+            wheres.push(
+              ...where.properties.map(
+                whereItem =>
+                  `"${main.alias}"."${main.metadata.getPropertyMetadata(whereItem.property)!.name}" = ${
+                    whereItem.value
+                  }`,
+              ),
+            );
+          }
+
+          if (where.raws) {
+            wheres.push(...where.raws.map(whereItem => `${whereItem.expression} = ${whereItem.value}`));
+          }
         }
 
         if (selects.length === 0) {
