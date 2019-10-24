@@ -3,55 +3,51 @@ import { Constructor } from "../types";
 import { BaseWhereQueryBuilder } from "./WhereQueryBuilder";
 
 export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBuilder<ModelResult, RawResult> {
-  public addSelectRaw<K extends keyof any>(
-    expression: string,
-    alias: K,
-  ): SelectQueryBuilder<
-    ModelResult,
-    RawResult extends any[]
-      ? Array<unknown extends RawResult[0] ? { [key in K]: any } : RawResult[0] & { [key in K]: any }>
-      : unknown extends RawResult
-      ? { [key in K]: any }
-      : RawResult & { [key in K]: any }
-  > {
-    if (this.expression.select!.raws) {
-      this.expression.select!.raws.push({ alias: alias as string, expression });
-    } else {
-      this.expression.select!.raws = [{ alias: alias as string, expression }];
-    }
-
-    return new SelectQueryBuilder(this);
-  }
-
-  public addSelectRawAs<R>(): <K extends keyof any>(
-    expression: string,
-    alias: K,
-  ) => SelectQueryBuilder<
-    ModelResult,
-    RawResult extends any[]
-      ? Array<unknown extends RawResult[0] ? { [key in K]: R } : RawResult[0] & { [key in K]: R }>
-      : unknown extends RawResult
-      ? { [key in K]: R }
-      : RawResult & { [key in K]: R }
-  > {
-    return (expression, alias) => {
-      return this.addSelectRaw(expression, alias);
-    };
-  }
+  // public addSelectRaw<K extends keyof any>(
+  //   expression: string,
+  //   alias: K,
+  // ): SelectQueryBuilder<
+  //   ModelResult,
+  //   RawResult extends any[]
+  //     ? Array<unknown extends RawResult[0] ? { [key in K]: any } : RawResult[0] & { [key in K]: any }>
+  //     : unknown extends RawResult
+  //     ? { [key in K]: any }
+  //     : RawResult & { [key in K]: any }
+  // > {
+  //   if (this.expression.select!.raws) {
+  //     this.expression.select!.raws.push({ alias: alias as string, expression });
+  //   } else {
+  //     this.expression.select!.raws = [{ alias: alias as string, expression }];
+  //   }
+  //
+  //   return new SelectQueryBuilder(this);
+  // }
+  //
+  // public addSelectRawAs<R>(): <K extends keyof any>(
+  //   expression: string,
+  //   alias: K,
+  // ) => SelectQueryBuilder<
+  //   ModelResult,
+  //   RawResult extends any[]
+  //     ? Array<unknown extends RawResult[0] ? { [key in K]: R } : RawResult[0] & { [key in K]: R }>
+  //     : unknown extends RawResult
+  //     ? { [key in K]: R }
+  //     : RawResult & { [key in K]: R }
+  // > {
+  //   return (expression, alias) => {
+  //     return this.addSelectRaw(expression, alias);
+  //   };
+  // }
 
   public from<Model>(
     model: Constructor<Model>,
-    alias?: string,
   ): SelectQueryBuilder<ModelResult extends any[] ? Model[] : Model, RawResult> {
     const modelMetadata = Metadata.getInstance().getModelMetadata(model);
     if (!modelMetadata) {
       throw new Error();
     }
 
-    this.expression.main = {
-      alias: alias || modelMetadata.name,
-      metadata: modelMetadata,
-    };
+    this.expression.main = modelMetadata;
 
     return (this as unknown) as SelectQueryBuilder<ModelResult extends any[] ? Model[] : Model, RawResult>;
   }
@@ -102,12 +98,24 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     ? ModelResult
     : { model: ModelResult; raw: RawResult } {
     let modelItems: ModelResult[] | undefined;
-    if (this.expression.select!.properties) {
+    if (this.expression.select!.selections) {
       modelItems = result.map(itemData => {
-        const item = new this.expression.main!.metadata.constructor();
+        const item: any = {};
 
-        this.expression.select!.properties!.forEach(propertyName => {
-          item[propertyName] = itemData[propertyName];
+        this.expression.select!.selections!.forEach(selection => {
+          if (typeof selection === "string") {
+            item[selection] = itemData[selection];
+          }
+        });
+
+        return item;
+      });
+    } else {
+      modelItems = result.map(itemData => {
+        const item = new this.expression.main!.constructor();
+
+        this.expression.main!.getPropertiesMetadata().forEach(propertyMetadata => {
+          item[propertyMetadata.propertyName] = itemData[propertyMetadata.propertyName];
         });
 
         return item;
@@ -115,17 +123,17 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     }
 
     let rawItems: RawResult[] | undefined;
-    if (this.expression.select!.raws) {
-      rawItems = result.map(itemData => {
-        const item: any = {};
-
-        this.expression.select!.raws!.forEach(raw => {
-          item[raw.alias] = itemData[raw.alias];
-        });
-
-        return item;
-      });
-    }
+    // if (this.expression.select!.raws) {
+    //   rawItems = result.map(itemData => {
+    //     const item: any = {};
+    //
+    //     this.expression.select!.raws!.forEach(raw => {
+    //       item[raw.alias] = itemData[raw.alias];
+    //     });
+    //
+    //     return item;
+    //   });
+    // }
 
     if (modelItems && rawItems) {
       // @ts-ignore

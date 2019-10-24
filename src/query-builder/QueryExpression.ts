@@ -2,15 +2,13 @@ import ModelMetadata from "../metadata/ModelMetadata";
 
 import { cloneDeep } from "lodash";
 
+export type QuerySelections = Array<string | { name: string; selections?: QuerySelections }>;
+
 export class QueryExpression {
-  public main?: {
-    alias: string;
-    metadata: ModelMetadata;
-  };
+  public main?: ModelMetadata;
   public select?: {
     mode?: "one" | "many";
-    properties?: string[];
-    raws?: Array<{ alias: string; expression: string }>;
+    selections?: QuerySelections;
   };
   public type?: "select";
   public where?: {

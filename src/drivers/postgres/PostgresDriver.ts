@@ -1,6 +1,8 @@
 import { Pool, PoolClient } from "pg";
 import { Connection } from "../../connection/Connection";
+import ModelMetadata from "../../metadata/ModelMetadata";
 import { BaseQueryBuilder } from "../../query-builder/BaseQueryBuilder";
+import { QuerySelections } from "../../query-builder/QueryExpression";
 import { IDriver } from "../Driver";
 import { IPostgresOptions } from "./PostgresOptions";
 import { PostgresQueryExecutor } from "./PostgresQueryExecutor";
@@ -38,35 +40,34 @@ export class PostgresDriver implements IDriver {
         }
         const limit = select.mode === "one" ? 1 : undefined;
 
+        // const
         const selects: string[] = [];
-        let from:
-          | {
-              alias: string;
-              from: string;
-            }
-          | undefined;
         const wheres: string[] = [];
 
-        if (select.properties) {
-          if (!main) {
-            throw new Error();
+        const iterate = (selections: QuerySelections | undefined, metadata: ModelMetadata) => {
+          if (selections) {
+            selections.forEach(selection => {
+              if (typeof selection === "string") {
+                selects.push(`"${metadata.name}"."${metadata.getPropertyMetadata(selection)!.name}" AS "${selection}"`);
+              }
+            });
+          } else {
+            selects.push(
+              ...metadata
+                .getPropertiesMetadata()
+                .map(
+                  propertyMetadata =>
+                    `"${metadata.name}"."${propertyMetadata.name}" AS "${propertyMetadata.propertyName}"`,
+                ),
+            );
           }
+        };
 
-          from = {
-            alias: main.alias,
-            from: main.metadata.name,
-          };
-
-          selects.push(
-            ...select.properties.map(
-              property => `"${main.alias}"."${main.metadata.getPropertyMetadata(property)!.name}" AS "${property}"`,
-            ),
-          );
+        if (!main) {
+          throw new Error();
         }
 
-        if (select.raws) {
-          selects.push(...select.raws.map(raw => `${raw.expression} AS "${raw.alias}"`));
-        }
+        iterate(select.selections, main);
 
         if (where) {
           if (where.properties) {
@@ -77,9 +78,7 @@ export class PostgresDriver implements IDriver {
             wheres.push(
               ...where.properties.map(
                 whereItem =>
-                  `"${main.alias}"."${main.metadata.getPropertyMetadata(whereItem.property)!.name}" = ${
-                    whereItem.value
-                  }`,
+                  `"${main.modelName}"."${main.getPropertyMetadata(whereItem.property)!.name}" = ${whereItem.value}`,
               ),
             );
           }
@@ -93,7 +92,7 @@ export class PostgresDriver implements IDriver {
           throw new Error();
         }
 
-        return `SELECT ${selects.join(", ")} ${from ? `FROM "${from.from}" AS "${from.alias}"` : ""} ${
+        return `SELECT ${selects.join(", ")} ${main ? `FROM "${main.name}" AS "${main.modelName}"` : ""} ${
           wheres.length > 0 ? `WHERE ${wheres.join(" AND")}` : ""
         } ${limit ? `LIMIT ${limit}` : ""}`;
       default:
