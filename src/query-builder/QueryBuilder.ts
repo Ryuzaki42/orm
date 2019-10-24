@@ -183,12 +183,22 @@ export class QueryBuilder<ModelResult, RawResult> extends BaseQueryBuilder<Model
   ): SelectQueryBuilder<any[], unknown[]> {
     this.expression.type = "select";
 
-    let selections: QuerySelections | undefined;
+    const selections: QuerySelections = [];
     if (query) {
-      selections = [];
       const iterate = (q: TQuery | { [KK in keyof any]: RawType }, s: QuerySelections) => {
-        Object.entries(q).forEach(([key, _]) => {
-          s.push(key);
+        Object.entries(q).forEach(([key, value]) => {
+          if (value === $) {
+            s.push(key);
+          } else if (value === Object(value)) {
+            const subSelections: QuerySelections = [];
+
+            s.push({
+              name: key,
+              selections: subSelections,
+            });
+
+            iterate(value, subSelections);
+          }
         });
       };
 

@@ -21,9 +21,25 @@ export class Pet {
 
   @Property
   public name!: string;
+  //
+  // @Property
+  // public stat!: PetStat;
+}
+
+class Name1 {
+  @Property
+  public name!: string;
+}
+
+class Name {
+  @Property
+  public name!: string;
 
   @Property
-  public stat!: PetStat;
+  public name1!: Name1;
+
+  @Property
+  public name2!: Name1;
 }
 
 @Model
@@ -31,11 +47,14 @@ export class User {
   @Property
   public id!: number;
 
-  @Property({ name: "custom" })
-  public name!: string;
+  // @Property({ name: "custom" })
+  // public name!: string;
 
   @Property
   public age!: number;
+
+  @Property
+  public name1!: Name;
 }
 
 console.log(Metadata.getInstance().getModelMetadata(User));
@@ -52,19 +71,23 @@ connection.connect().then(async c => {
     .createQueryBuilder(User)
     .select({
       age: $,
+      name1: {
+        name: $,
+        name1: $,
+      },
     })
-    .where("id", 2)
+    .where("id", 3)
     .one();
 
   console.log(res);
 
-  const res1 = await c
-    .createQueryBuilder(User)
-    .select()
-    .where("id", 2)
-    .one();
-
-  console.log(res1);
+  // const res1 = await c
+  //   .createQueryBuilder(User)
+  //   .select()
+  //   .where("id", 2)
+  //   .one();
+  //
+  // console.log(res1);
 
   // const res1 = await c
   //   .createQueryBuilder(User)

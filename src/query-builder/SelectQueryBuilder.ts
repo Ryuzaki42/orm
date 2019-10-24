@@ -1,5 +1,7 @@
 import Metadata from "../metadata/Metadata";
+import ModelMetadata from "../metadata/ModelMetadata";
 import { Constructor } from "../types";
+import { QuerySelections } from "./QueryExpression";
 import { BaseWhereQueryBuilder } from "./WhereQueryBuilder";
 
 export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBuilder<ModelResult, RawResult> {
@@ -61,6 +63,7 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     } else {
       this.expression.select = {
         mode: "many",
+        selections: [],
       };
     }
     return (this as unknown) as SelectQueryBuilder<
@@ -78,6 +81,7 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     } else {
       this.expression.select = {
         mode: "one",
+        selections: [],
       };
     }
     return (this as unknown) as SelectQueryBuilder<
@@ -98,29 +102,48 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     ? ModelResult
     : { model: ModelResult; raw: RawResult } {
     let modelItems: ModelResult[] | undefined;
-    if (this.expression.select!.selections) {
-      modelItems = result.map(itemData => {
-        const item: any = {};
+    modelItems = result.map(itemData => {
+      const iterate = (selections: QuerySelections, metadata: ModelMetadata, path?: string, newClass?: boolean) => {
+        const item: any = newClass ? new metadata.constructor() : {};
 
-        this.expression.select!.selections!.forEach(selection => {
+        selections.forEach(selection => {
           if (typeof selection === "string") {
-            item[selection] = itemData[selection];
+            const propertyMetadata = metadata.getPropertyMetadata(selection)!;
+            const modelMetadata = Metadata.getInstance().getModelMetadata(propertyMetadata.type);
+
+            if (modelMetadata) {
+              item[selection] = iterate(
+                modelMetadata.getPropertiesMetadata().map(m => m.propertyName),
+                modelMetadata,
+                `${path ? `${path}_` : ""}${selection}`,
+                true,
+              );
+            } else {
+              item[selection] = itemData[`${path ? `${path}_` : ""}${selection}`];
+            }
+          } else {
+            item[selection.name] = iterate(
+              selection.selections,
+              Metadata.getInstance().getModelMetadata(metadata.getPropertyMetadata(selection.name)!.type)!,
+              `${path ? `${path}_` : ""}${selection.name}`,
+            );
           }
         });
 
         return item;
-      });
-    } else {
-      modelItems = result.map(itemData => {
-        const item = new this.expression.main!.constructor();
+      };
 
-        this.expression.main!.getPropertiesMetadata().forEach(propertyMetadata => {
-          item[propertyMetadata.propertyName] = itemData[propertyMetadata.propertyName];
-        });
-
-        return item;
-      });
-    }
+      if (this.expression.select!.selections.length === 0) {
+        return iterate(
+          this.expression.main!.getPropertiesMetadata().map(m => m.propertyName),
+          this.expression.main!,
+          undefined,
+          true,
+        );
+      } else {
+        return iterate(this.expression.select!.selections, this.expression.main!);
+      }
+    });
 
     let rawItems: RawResult[] | undefined;
     // if (this.expression.select!.raws) {
