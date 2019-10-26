@@ -7,6 +7,7 @@ import { Constructor, PropertyType } from "../types";
 
 interface IPropertyOptions {
   name?: string;
+  reference?: boolean;
   type?: PropertyType;
 }
 
@@ -33,7 +34,9 @@ export function Property(targetOrOptions: object | IPropertyOptions, maybeProper
       }
     }
 
-    modelMetadata.addPropertyMetadata(new PropertyMetadata(name, options.name || name, type));
+    modelMetadata.addPropertyMetadata(
+      new PropertyMetadata(name, options.name || name, type, options.reference || false),
+    );
   };
 
   if (maybePropertyName) {

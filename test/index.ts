@@ -1,7 +1,6 @@
 import { Model, Property } from "../src";
 import { ConnectionManager } from "../src/connection/ConnectionManager";
-import Metadata from "../src/metadata/Metadata";
-import { $ } from "../src/query-builder/QueryBuilder";
+import { $ } from "../src/query-builder/QueryExpression";
 
 @Model
 export class PetStat {
@@ -53,11 +52,11 @@ export class User {
   @Property
   public age!: number;
 
-  @Property
+  @Property({ reference: true })
   public name1!: Name;
 }
 
-console.log(Metadata.getInstance().getModelMetadata(User));
+// console.log(Metadata.getInstance().getModelMetadata(User));
 
 const connection = ConnectionManager.getInstance().create({
   database: "test",
@@ -70,16 +69,12 @@ connection.connect().then(async c => {
   const res = await c
     .createQueryBuilder(User)
     .select({
-      age: $,
-      name1: {
-        name: $,
-        name1: $,
-      },
+      name1: $,
     })
     .where("id", 3)
     .one();
 
-  console.log(res);
+  console.log("RES", res);
 
   // const res1 = await c
   //   .createQueryBuilder(User)

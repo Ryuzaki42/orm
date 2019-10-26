@@ -1,6 +1,10 @@
+import Metadata from "../metadata/Metadata";
+import ModelMetadata from "../metadata/ModelMetadata";
 import { BaseQueryBuilder } from "./BaseQueryBuilder";
+import { $, IRawType, Query, QueryResult, QuerySelections, QuerySimplify } from "./QueryExpression";
 import { SelectQueryBuilder } from "./SelectQueryBuilder";
-import { QuerySelections } from "./QueryExpression";
+
+import { cloneDeep } from "lodash";
 
 // // === FIRST VARIANT
 //
@@ -122,43 +126,11 @@ import { QuerySelections } from "./QueryExpression";
 
 // === SECOND VARIANT
 
-export declare const $: unique symbol;
-export type $ = typeof $;
-
-type Query<TContext> = {
-  [K in keyof TContext]?: ($ | Query<TContext[K]> | { [KK in keyof any]: RawType });
-};
-
-type QueryResult<TContext, TQuery extends Query<TContext>> = {
-  [K in keyof TQuery]: K extends keyof TContext
-    ? TQuery[K] extends $
-      ? TContext[K]
-      : QueryResult<TContext[K], TQuery[K]>
-    : never;
-};
-
-export class RawType<T = any, K = any> {
-  public key!: K;
-  public type!: T;
-}
-
-type QuerySimplify<T, TQuery> = TQuery extends $
-  ? T
-  : TQuery extends RawType
-  ? TQuery["type"]
-  : TQuery extends object
-  ? T extends never
-    ? never
-    : {
-        [K in keyof TQuery]: K extends keyof T ? QuerySimplify<T[K], TQuery[K]> : never;
-      }
-  : never;
-
 // export function rawAs<T>(): <K extends keyof TT, TT = any>(expression: string, alias?: K) => RawType<T, K> {
 //   return 0 as any;
 // }
 
-export function raw<T = any>(expression: string): RawType<T> {
+export function raw<T = any>(expression: string): IRawType<T> {
   console.log(expression);
   return 0 as any;
 }
@@ -175,34 +147,94 @@ export class QueryBuilder<ModelResult, RawResult> extends BaseQueryBuilder<Model
   // ): SelectQueryBuilder<Array<Resolve<ConvertGetKeys<ModelResult, Keys>>>, unknown[]>;
 
   public select<TQuery extends Query<ModelResult>>(
-    query: TQuery | { [KK in keyof any]: RawType },
+    query: TQuery,
   ): SelectQueryBuilder<Array<QuerySimplify<QueryResult<ModelResult, TQuery>, TQuery>>, unknown[]>;
 
-  public select<TQuery extends Query<ModelResult>>(
-    query?: TQuery | { [KK in keyof any]: RawType },
-  ): SelectQueryBuilder<any[], unknown[]> {
+  public select<TQuery extends Query<ModelResult>>(query?: TQuery): SelectQueryBuilder<any[], unknown[]> {
     this.expression.type = "select";
 
     const selections: QuerySelections = [];
-    if (query) {
-      const iterate = (q: TQuery | { [KK in keyof any]: RawType }, s: QuerySelections) => {
-        Object.entries(q).forEach(([key, value]) => {
-          if (value === $) {
-            s.push(key);
-          } else if (value === Object(value)) {
-            const subSelections: QuerySelections = [];
+    const iterate = (
+      q: TQuery,
+      metadata: ModelMetadata,
+      from: string,
+      prefix?: string,
+      embeddedMetadata?: ModelMetadata,
+    ) => {
+      Object.entries(q).forEach(([key, value]) => {
+        if (value === $) {
+          const propertyMetadata = (embeddedMetadata || metadata).getPropertyMetadata(key)!;
+          const modelMetadata = Metadata.getInstance().getModelMetadata(propertyMetadata.type);
 
-            s.push({
-              name: key,
-              selections: subSelections,
+          if (modelMetadata) {
+            if (propertyMetadata.reference) {
+              iterate(
+                modelMetadata.getPropertiesMetadata().reduce(
+                  (qq, property) => {
+                    qq[property.propertyName] = $;
+
+                    return qq;
+                  },
+                  {} as any,
+                ),
+                modelMetadata,
+                `${from}_${key}`,
+                `${prefix ? `${prefix}_` : ""}${key}`,
+              );
+            } else {
+              iterate(
+                modelMetadata.getPropertiesMetadata().reduce(
+                  (qq, property) => {
+                    qq[property.propertyName] = $;
+
+                    return qq;
+                  },
+                  {} as any,
+                ),
+                metadata,
+                from,
+                `${prefix ? `${prefix}_` : ""}${key}`,
+                modelMetadata,
+              );
+            }
+          } else {
+            selections.push({
+              from,
+              select: { alias: `${prefix ? `${prefix}_` : ""}${key}`, value: `${prefix ? `${prefix}_` : ""}${key}` },
             });
-
-            iterate(value, subSelections);
           }
-        });
-      };
+        } else if (value === Object(value)) {
+          const propertyMetadata = metadata.getPropertyMetadata(key)!;
+          const modelMetadata = Metadata.getInstance().getModelMetadata(propertyMetadata.type);
 
-      iterate(query, selections);
+          if (modelMetadata) {
+            if (propertyMetadata.reference) {
+              iterate(value, modelMetadata, from, `${prefix ? `${prefix}_` : ""}${key}`);
+            } else {
+              iterate(value, metadata, from, `${prefix ? `${prefix}_` : ""}${key}`, modelMetadata);
+            }
+          } else {
+            throw new Error();
+          }
+        }
+      });
+    };
+
+    if (query) {
+      iterate(query, this.expression.main!.metadata, this.expression.main!.metadata.name);
+    } else {
+      iterate(
+        this.expression.main!.metadata.getPropertiesMetadata().reduce(
+          (qq, property) => {
+            qq[property.propertyName] = $;
+
+            return qq;
+          },
+          {} as any,
+        ),
+        this.expression.main!.metadata,
+        this.expression.main!.metadata.name,
+      );
     }
 
     if (this.expression.select) {
@@ -210,6 +242,16 @@ export class QueryBuilder<ModelResult, RawResult> extends BaseQueryBuilder<Model
     } else {
       this.expression.select = {
         mode: "many",
+        query: query
+          ? cloneDeep(query)
+          : this.expression.main!.metadata.getPropertiesMetadata().reduce(
+              (qq, property) => {
+                qq[property.propertyName] = $;
+
+                return qq;
+              },
+              {} as any,
+            ),
         selections,
       };
     }

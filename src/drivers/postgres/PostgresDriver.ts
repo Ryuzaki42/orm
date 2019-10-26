@@ -1,9 +1,6 @@
 import { Pool, PoolClient } from "pg";
 import { Connection } from "../../connection/Connection";
-import Metadata from "../../metadata/Metadata";
-import ModelMetadata from "../../metadata/ModelMetadata";
 import { BaseQueryBuilder } from "../../query-builder/BaseQueryBuilder";
-import { QuerySelections } from "../../query-builder/QueryExpression";
 import { IDriver } from "../Driver";
 import { IPostgresOptions } from "./PostgresOptions";
 import { PostgresQueryExecutor } from "./PostgresQueryExecutor";
@@ -41,53 +38,14 @@ export class PostgresDriver implements IDriver {
         }
         const limit = select.mode === "one" ? 1 : undefined;
 
-        const selects: string[] = [];
+        const selects = select.selections.map(
+          selection => `"${selection.from}"."${selection.select.value}" AS "${selection.select.alias}"`,
+        );
         const wheres: string[] = [];
-
-        const iterate = (
-          selections: QuerySelections,
-          metadata: ModelMetadata,
-          embedded?: { databasePath: string; metadata: ModelMetadata; path: string },
-        ) => {
-          selections.forEach(selection => {
-            if (typeof selection === "string") {
-              const propertyMetadata = (embedded ? embedded.metadata : metadata).getPropertyMetadata(selection)!;
-              const modelMetadata = Metadata.getInstance().getModelMetadata(propertyMetadata.type);
-
-              if (modelMetadata) {
-                iterate(modelMetadata.getPropertiesMetadata().map(m => m.propertyName), metadata, {
-                  databasePath: `${embedded ? `${embedded.databasePath}_` : ""}${propertyMetadata.name}`,
-                  metadata: modelMetadata,
-                  path: `${embedded ? `${embedded.path}_` : ""}${propertyMetadata.propertyName}`,
-                });
-              } else {
-                selects.push(
-                  `"${metadata.name}"."${embedded ? `${embedded.databasePath}_` : ""}${
-                    (embedded ? embedded.metadata : metadata).getPropertyMetadata(selection)!.name
-                  }" AS "${embedded ? `${embedded.path}_` : ""}${selection}"`,
-                );
-              }
-            } else {
-              const propertyMetadata = metadata.getPropertyMetadata(selection.name)!;
-              const modelMetadata = Metadata.getInstance().getModelMetadata(propertyMetadata.type)!;
-
-              iterate(selection.selections, metadata, {
-                databasePath: `${embedded ? `${embedded.databasePath}_` : ""}${propertyMetadata.name}`,
-                metadata: modelMetadata,
-                path: `${embedded ? `${embedded.path}_` : ""}${propertyMetadata.propertyName}`,
-              });
-            }
-          });
-        };
 
         if (!main) {
           throw new Error();
         }
-
-        iterate(
-          select.selections.length === 0 ? main.getPropertiesMetadata().map(m => m.propertyName) : select.selections,
-          main,
-        );
 
         if (where) {
           if (where.properties) {
@@ -98,7 +56,9 @@ export class PostgresDriver implements IDriver {
             wheres.push(
               ...where.properties.map(
                 whereItem =>
-                  `"${main.modelName}"."${main.getPropertyMetadata(whereItem.property)!.name}" = ${whereItem.value}`,
+                  `"${main.metadata.modelName}"."${main.metadata.getPropertyMetadata(whereItem.property)!.name}" = ${
+                    whereItem.value
+                  }`,
               ),
             );
           }
@@ -112,7 +72,7 @@ export class PostgresDriver implements IDriver {
           throw new Error();
         }
 
-        return `SELECT ${selects.join(", ")} ${main ? `FROM "${main.name}" AS "${main.modelName}"` : ""} ${
+        return `SELECT ${selects.join(", ")} ${main ? `FROM "${main.metadata.name}" AS "${main.alias}"` : ""} ${
           wheres.length > 0 ? `WHERE ${wheres.join(" AND")}` : ""
         } ${limit ? `LIMIT ${limit}` : ""}`;
       default:

@@ -1,7 +1,7 @@
 import Metadata from "../metadata/Metadata";
 import ModelMetadata from "../metadata/ModelMetadata";
 import { Constructor } from "../types";
-import { QuerySelections } from "./QueryExpression";
+import { $, Query } from "./QueryExpression";
 import { BaseWhereQueryBuilder } from "./WhereQueryBuilder";
 
 export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBuilder<ModelResult, RawResult> {
@@ -43,13 +43,17 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
 
   public from<Model>(
     model: Constructor<Model>,
+    alias?: string,
   ): SelectQueryBuilder<ModelResult extends any[] ? Model[] : Model, RawResult> {
     const modelMetadata = Metadata.getInstance().getModelMetadata(model);
     if (!modelMetadata) {
       throw new Error();
     }
 
-    this.expression.main = modelMetadata;
+    this.expression.main = {
+      alias: alias || modelMetadata.modelName,
+      metadata: modelMetadata,
+    };
 
     return (this as unknown) as SelectQueryBuilder<ModelResult extends any[] ? Model[] : Model, RawResult>;
   }
@@ -63,6 +67,7 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     } else {
       this.expression.select = {
         mode: "many",
+        query: {},
         selections: [],
       };
     }
@@ -81,6 +86,7 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     } else {
       this.expression.select = {
         mode: "one",
+        query: {},
         selections: [],
       };
     }
@@ -103,29 +109,36 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     : { model: ModelResult; raw: RawResult } {
     let modelItems: ModelResult[] | undefined;
     modelItems = result.map(itemData => {
-      const iterate = (selections: QuerySelections, metadata: ModelMetadata, path?: string, newClass?: boolean) => {
+      const iterate = (query: Query<any>, metadata: ModelMetadata, path?: string, newClass?: boolean) => {
         const item: any = newClass ? new metadata.constructor() : {};
 
-        selections.forEach(selection => {
-          if (typeof selection === "string") {
-            const propertyMetadata = metadata.getPropertyMetadata(selection)!;
+        Object.entries(query).forEach(([key, value]) => {
+          if (value === $) {
+            const propertyMetadata = metadata.getPropertyMetadata(key)!;
             const modelMetadata = Metadata.getInstance().getModelMetadata(propertyMetadata.type);
 
             if (modelMetadata) {
-              item[selection] = iterate(
-                modelMetadata.getPropertiesMetadata().map(m => m.propertyName),
+              item[key] = iterate(
+                modelMetadata.getPropertiesMetadata().reduce(
+                  (qq, property) => {
+                    qq[property.propertyName] = $;
+
+                    return qq;
+                  },
+                  {} as any,
+                ),
                 modelMetadata,
-                `${path ? `${path}_` : ""}${selection}`,
+                `${path ? `${path}_` : ""}${key}`,
                 true,
               );
             } else {
-              item[selection] = itemData[`${path ? `${path}_` : ""}${selection}`];
+              item[key] = itemData[`${path ? `${path}_` : ""}${key}`];
             }
           } else {
-            item[selection.name] = iterate(
-              selection.selections,
-              Metadata.getInstance().getModelMetadata(metadata.getPropertyMetadata(selection.name)!.type)!,
-              `${path ? `${path}_` : ""}${selection.name}`,
+            item[key] = iterate(
+              value,
+              Metadata.getInstance().getModelMetadata(metadata.getPropertyMetadata(key)!.type)!,
+              `${path ? `${path}_` : ""}${key}`,
             );
           }
         });
@@ -133,18 +146,8 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
         return item;
       };
 
-      if (this.expression.select!.selections.length === 0) {
-        return iterate(
-          this.expression.main!.getPropertiesMetadata().map(m => m.propertyName),
-          this.expression.main!,
-          undefined,
-          true,
-        );
-      } else {
-        return iterate(this.expression.select!.selections, this.expression.main!);
-      }
+      return iterate(this.expression.select!.query, this.expression.main!.metadata);
     });
-
     let rawItems: RawResult[] | undefined;
     // if (this.expression.select!.raws) {
     //   rawItems = result.map(itemData => {
@@ -157,7 +160,6 @@ export class SelectQueryBuilder<ModelResult, RawResult> extends BaseWhereQueryBu
     //     return item;
     //   });
     // }
-
     if (modelItems && rawItems) {
       // @ts-ignore
       return {
